@@ -31,6 +31,14 @@ on:
         options:
           - '20'
           - '30'
+      sd_turbo_steps:
+        description: SD-Turbo inference steps
+        required: true
+        type: choice
+        default: '1'
+        options:
+          - '1'
+          - '4'
       invocation_id:
         description: Correlation identifier
         required: true
@@ -72,6 +80,7 @@ jobs:
           MODEL: ${{ inputs.model }}
           PRECISION: ${{ inputs.precision }}
           SD15_STEPS: ${{ inputs.sd15_steps }}
+          SD_TURBO_STEPS: ${{ inputs.sd_turbo_steps }}
           OMP_NUM_THREADS: '2'
           MKL_NUM_THREADS: '2'
         run: python benchmarks/cpu_image_benchmark.py
