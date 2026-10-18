@@ -98,7 +98,8 @@ elif MODEL == "sdxl-lightning":
     from safetensors.torch import load_file
 
     base = "stabilityai/stable-diffusion-xl-base-1.0"
-    unet = UNet2DConditionModel.from_config(base, subfolder="unet", torch_dtype=DTYPE)
+    unet = UNet2DConditionModel.from_config(base, subfolder="unet")
+    unet = unet.to(dtype=DTYPE)
     ckpt = hf_hub_download("ByteDance/SDXL-Lightning", "sdxl_lightning_1step_unet_x0.safetensors")
     unet.load_state_dict(load_file(ckpt, device="cpu"))
     pipe = StableDiffusionXLPipeline.from_pretrained(base, unet=unet, torch_dtype=DTYPE)
@@ -111,6 +112,10 @@ else:
     raise SystemExit(f"unsupported diffusers model: {MODEL}")
 
 pipe = pipe.to("cpu")
+unet_dtypes = sorted({str(parameter.dtype) for parameter in pipe.unet.parameters()})
+print(f"unet_parameter_dtypes={unet_dtypes}", flush=True)
+if unet_dtypes != [str(DTYPE)]:
+    raise SystemExit(f"UNet parameter dtype mismatch: expected {DTYPE}, got {unet_dtypes}")
 load_done = time.perf_counter()
 print(f"load_seconds={load_done - started:.3f}", flush=True)
 
