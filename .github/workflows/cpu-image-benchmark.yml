@@ -1,0 +1,124 @@
+name: CPU Image Benchmark (scratch)
+run-name: CPU image benchmark ${{ inputs.model }} ${{ inputs.invocation_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: Candidate model/runtime to benchmark
+        required: true
+        type: choice
+        options:
+          - sd15
+          - sdxl-turbo
+          - sdxl-lightning
+          - z-image-turbo-gguf
+      invocation_id:
+        description: Correlation identifier
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out scratch branch
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache model files
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: cpu-image-${{ inputs.model }}-${{ runner.os }}-${{ hashFiles('benchmarks/cpu_image_benchmark.py', '.github/workflows/cpu-image-benchmark.yml') }}
+
+      - name: Install Python runtime
+        if: inputs.model != 'z-image-turbo-gguf'
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install psutil pillow diffusers transformers accelerate safetensors huggingface_hub
+          python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Run Diffusers benchmark
+        if: inputs.model != 'z-image-turbo-gguf'
+        env:
+          MODEL: ${{ inputs.model }}
+          OMP_NUM_THREADS: '2'
+          MKL_NUM_THREADS: '2'
+        run: python benchmarks/cpu_image_benchmark.py
+
+      - name: Build stable-diffusion.cpp CPU runtime
+        if: inputs.model == 'z-image-turbo-gguf'
+        run: |
+          git clone --depth 1 https://github.com/leejet/stable-diffusion.cpp.git /tmp/stable-diffusion.cpp
+          cmake -S /tmp/stable-diffusion.cpp -B /tmp/stable-diffusion.cpp/build -DSD_CUDA=OFF -DSD_VULKAN=OFF -DSD_METAL=OFF
+          cmake --build /tmp/stable-diffusion.cpp/build --config Release -j2
+          /tmp/stable-diffusion.cpp/build/bin/sd-cli -h | head -120
+
+      - name: Download Z-Image-Turbo GGUF dependencies
+        if: inputs.model == 'z-image-turbo-gguf'
+        run: |
+          python -m pip install --upgrade huggingface_hub psutil
+          mkdir -p /tmp/zimage-models
+          python - <<'PY'
+          from huggingface_hub import hf_hub_download
+          import shutil
+          files = [
+              ('leejet/Z-Image-Turbo-GGUF', 'z_image_turbo-Q3_K.gguf', 'diffusion.gguf'),
+              ('unsloth/Qwen3-4B-Instruct-2507-GGUF', 'Qwen3-4B-Instruct-2507-Q4_K_M.gguf', 'text.gguf'),
+              ('black-forest-labs/FLUX.1-schnell', 'ae.safetensors', 'ae.sft'),
+          ]
+          for repo, filename, out in files:
+              src = hf_hub_download(repo, filename)
+              shutil.copy2(src, '/tmp/zimage-models/' + out)
+          PY
+          ls -lh /tmp/zimage-models
+
+      - name: Run Z-Image-Turbo benchmark
+        if: inputs.model == 'z-image-turbo-gguf'
+        env:
+          OMP_NUM_THREADS: '2'
+        run: |
+          set +e
+          mkdir -p benchmark-output/z-image-turbo-gguf
+          cat > /tmp/zimage_prompts.tsv <<'EOF'
+          01_red_fox_snow_dawn	a red fox in snow at dawn, photographic
+          02_tavern_sign_open_late	a hand-drawn tavern sign that says "OPEN LATE"
+          03_futuristic_city_rain	a futuristic city street at night in rain
+          04_ramen_closeup	a bowl of ramen, close-up
+          05_elderly_fisherman	a portrait of an elderly fisherman
+          EOF
+          : > benchmark-output/z-image-turbo-gguf/metrics.jsonl
+          while IFS=$'\t' read -r slug prompt; do
+            echo "=== $slug ==="
+            /usr/bin/time -v -o "/tmp/${slug}.time" /tmp/stable-diffusion.cpp/build/bin/sd-cli \
+              --diffusion-model /tmp/zimage-models/diffusion.gguf \
+              --vae /tmp/zimage-models/ae.sft \
+              --llm /tmp/zimage-models/text.gguf \
+              --cfg-scale 1.0 --steps 8 --width 512 --height 512 \
+              --output "benchmark-output/z-image-turbo-gguf/${slug}.png" \
+              -p "$prompt"
+            rc=$?
+            rss=$(awk -F: '/Maximum resident set size/ {gsub(/^[ \t]+/,"",$2); print $2}' "/tmp/${slug}.time")
+            wall=$(awk -F: '/Elapsed \(wall clock\) time/ {gsub(/^[ \t]+/,"",$2); print $2}' "/tmp/${slug}.time")
+            bytes=0; test -f "benchmark-output/z-image-turbo-gguf/${slug}.png" && bytes=$(stat -c %s "benchmark-output/z-image-turbo-gguf/${slug}.png")
+            printf '{"prompt":%q,"exit_code":%s,"wall_time":"%s","peak_rss_kb":"%s","output_bytes":%s}\n' "$prompt" "$rc" "$wall" "$rss" "$bytes" >> benchmark-output/z-image-turbo-gguf/metrics.jsonl
+          done < /tmp/zimage_prompts.tsv
+          cat benchmark-output/z-image-turbo-gguf/metrics.jsonl
+
+      - name: Upload benchmark artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-image-${{ inputs.model }}-${{ inputs.invocation_id }}
+          path: benchmark-output
+          if-no-files-found: warn
+          retention-days: 14
