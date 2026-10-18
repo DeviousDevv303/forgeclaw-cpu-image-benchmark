@@ -1,0 +1,43 @@
+{
+  "model": "sd15",
+  "runner_os": "Linux",
+  "python": "3.11.17 (main, Oct  1 2026, 14:32:31) [GCC 13.3.0]",
+  "torch": "2.14.1+cu130",
+  "total_wall_seconds": 1269.533,
+  "load_seconds": 23.203,
+  "peak_rss_bytes": 7521882112,
+  "peak_rss_mib": 7173.43,
+  "resolution": "512x512",
+  "records": [
+    {
+      "prompt": "a red fox in snow at dawn, photographic",
+      "path": "benchmark-output/sd15/01_red_fox_snow_dawn.png",
+      "wall_seconds": 248.303,
+      "output_bytes": 366396
+    },
+    {
+      "prompt": "a hand-drawn tavern sign that says \"OPEN LATE\"",
+      "path": "benchmark-output/sd15/02_tavern_sign_open_late.png",
+      "wall_seconds": 251.838,
+      "output_bytes": 462396
+    },
+    {
+      "prompt": "a futuristic city street at night in rain",
+      "path": "benchmark-output/sd15/03_futuristic_city_rain.png",
+      "wall_seconds": 249.197,
+      "output_bytes": 472585
+    },
+    {
+      "prompt": "a bowl of ramen, close-up",
+      "path": "benchmark-output/sd15/04_ramen_closeup.png",
+      "wall_seconds": 248.237,
+      "output_bytes": 443743
+    },
+    {
+      "prompt": "a portrait of an elderly fisherman",
+      "path": "benchmark-output/sd15/05_elderly_fisherman.png",
+      "wall_seconds": 248.56,
+      "output_bytes": 395596
+    }
+  ]
+}

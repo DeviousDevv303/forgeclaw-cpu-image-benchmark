@@ -1,0 +1,43 @@
+{
+  "model": "sdxl-lightning",
+  "runner_os": "Linux",
+  "python": "3.11.17 (main, Oct  1 2026, 14:32:31) [GCC 13.3.0]",
+  "torch": "2.14.1+cu130",
+  "total_wall_seconds": 302.082,
+  "load_seconds": 68.223,
+  "peak_rss_bytes": 15133982720,
+  "peak_rss_mib": 14432.89,
+  "resolution": "512x512",
+  "records": [
+    {
+      "prompt": "a red fox in snow at dawn, photographic",
+      "path": "benchmark-output/sdxl-lightning/01_red_fox_snow_dawn.png",
+      "wall_seconds": 128.873,
+      "output_bytes": 350851
+    },
+    {
+      "prompt": "a hand-drawn tavern sign that says \"OPEN LATE\"",
+      "path": "benchmark-output/sdxl-lightning/02_tavern_sign_open_late.png",
+      "wall_seconds": 26.35,
+      "output_bytes": 402964
+    },
+    {
+      "prompt": "a futuristic city street at night in rain",
+      "path": "benchmark-output/sdxl-lightning/03_futuristic_city_rain.png",
+      "wall_seconds": 26.138,
+      "output_bytes": 408424
+    },
+    {
+      "prompt": "a bowl of ramen, close-up",
+      "path": "benchmark-output/sdxl-lightning/04_ramen_closeup.png",
+      "wall_seconds": 26.219,
+      "output_bytes": 505683
+    },
+    {
+      "prompt": "a portrait of an elderly fisherman",
+      "path": "benchmark-output/sdxl-lightning/05_elderly_fisherman.png",
+      "wall_seconds": 26.23,
+      "output_bytes": 320663
+    }
+  ]
+}
