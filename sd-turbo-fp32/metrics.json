@@ -1,0 +1,61 @@
+{
+  "model": "sd-turbo",
+  "precision": "float32",
+  "torch_dtype": "torch.float32",
+  "steps": 1,
+  "guidance_scale": 0.0,
+  "runner_os": "Linux",
+  "python": "3.11.17 (main, Oct  1 2026, 14:32:31) [GCC 13.3.0]",
+  "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+  "logical_cpus": 4,
+  "torch_threads": 2,
+  "package_versions": {
+    "accelerate": "1.15.0",
+    "diffusers": "0.41.0",
+    "huggingface-hub": "1.33.0",
+    "numpy": "2.4.6",
+    "pillow": "13.0.0",
+    "psutil": "7.2.2",
+    "safetensors": "0.8.0",
+    "torch": "2.14.1+cpu",
+    "torchvision": "0.29.1+cpu",
+    "transformers": "5.20.1"
+  },
+  "total_wall_seconds": 131.733,
+  "load_seconds": 25.288,
+  "peak_rss_bytes": 6762934272,
+  "peak_rss_mib": 6449.64,
+  "resolution": "512x512",
+  "records": [
+    {
+      "prompt": "a red fox in snow at dawn, photographic",
+      "path": "benchmark-output/sd-turbo/01_red_fox_snow_dawn.png",
+      "wall_seconds": 21.322,
+      "output_bytes": 391926
+    },
+    {
+      "prompt": "a hand-drawn tavern sign that says \"OPEN LATE\"",
+      "path": "benchmark-output/sd-turbo/02_tavern_sign_open_late.png",
+      "wall_seconds": 21.178,
+      "output_bytes": 474279
+    },
+    {
+      "prompt": "a futuristic city street at night in rain",
+      "path": "benchmark-output/sd-turbo/03_futuristic_city_rain.png",
+      "wall_seconds": 21.19,
+      "output_bytes": 474989
+    },
+    {
+      "prompt": "a bowl of ramen, close-up",
+      "path": "benchmark-output/sd-turbo/04_ramen_closeup.png",
+      "wall_seconds": 21.32,
+      "output_bytes": 482676
+    },
+    {
+      "prompt": "a portrait of an elderly fisherman",
+      "path": "benchmark-output/sd-turbo/05_elderly_fisherman.png",
+      "wall_seconds": 21.271,
+      "output_bytes": 402290
+    }
+  ]
+}
