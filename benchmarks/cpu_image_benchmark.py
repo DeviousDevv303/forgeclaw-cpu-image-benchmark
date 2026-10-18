@@ -1,4 +1,5 @@
 import importlib.metadata
+import gc
 import json
 import os
 import platform
@@ -74,6 +75,7 @@ monitor = threading.Thread(target=sample_memory, daemon=True)
 monitor.start()
 started = time.perf_counter()
 records = []
+prompt_embeddings = None
 
 if MODEL == "sd15":
     from diffusers import DPMSolverMultistepScheduler, StableDiffusionPipeline
@@ -89,6 +91,41 @@ elif MODEL == "sdxl-turbo":
 
     pipe = AutoPipelineForText2Image.from_pretrained(
         "stabilityai/sdxl-turbo", torch_dtype=DTYPE
+    )
+    pipe.enable_attention_slicing()
+    steps, guidance = 1, 0.0
+elif MODEL == "sdxl-turbo-staged":
+    from diffusers import AutoencoderKL, StableDiffusionXLPipeline, UNet2DConditionModel
+
+    base = "stabilityai/sdxl-turbo"
+    pipe = StableDiffusionXLPipeline.from_pretrained(
+        base, unet=None, vae=None, torch_dtype=DTYPE
+    )
+    prompt_embeddings = []
+    for _, prompt in PROMPTS:
+        with torch.inference_mode():
+            encoded = pipe.encode_prompt(
+                prompt=prompt,
+                device="cpu",
+                num_images_per_prompt=1,
+                do_classifier_free_guidance=False,
+            )
+        prompt_embeddings.append((encoded[0], encoded[2]))
+    pipe.text_encoder = None
+    pipe.text_encoder_2 = None
+    gc.collect()
+    unet = UNet2DConditionModel.from_pretrained(
+        base, subfolder="unet", torch_dtype=DTYPE
+    )
+    vae = AutoencoderKL.from_pretrained(base, subfolder="vae", torch_dtype=DTYPE)
+    pipe.register_modules(unet=unet, vae=vae)
+    pipe.enable_attention_slicing()
+    steps, guidance = 1, 0.0
+elif MODEL == "sd-turbo":
+    from diffusers import AutoPipelineForText2Image
+
+    pipe = AutoPipelineForText2Image.from_pretrained(
+        "stabilityai/sd-turbo", torch_dtype=DTYPE
     )
     pipe.enable_attention_slicing()
     steps, guidance = 1, 0.0
@@ -133,6 +170,9 @@ for index, (slug, prompt) in enumerate(PROMPTS):
     )
     if MODEL == "sd15":
         kwargs["negative_prompt"] = "blurry, low quality, distorted, watermark, signature"
+    if prompt_embeddings is not None:
+        kwargs.pop("prompt")
+        kwargs["prompt_embeds"], kwargs["pooled_prompt_embeds"] = prompt_embeddings[index]
     with torch.inference_mode():
         result = pipe(**kwargs).images[0]
     result.save(path, format="PNG")

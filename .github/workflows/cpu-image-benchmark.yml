@@ -11,6 +11,8 @@ on:
         options:
           - sd15
           - sdxl-turbo
+          - sdxl-turbo-staged
+          - sd-turbo
           - sdxl-lightning
           - z-image-turbo-gguf
       precision:
