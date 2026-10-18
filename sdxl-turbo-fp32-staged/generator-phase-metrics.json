@@ -1,0 +1,63 @@
+{
+  "phase": "generate",
+  "model": "stabilityai/sdxl-turbo",
+  "precision": "float32",
+  "steps": 1,
+  "guidance_scale": 0.0,
+  "resolution": "512x512",
+  "model_load_seconds": 59.583,
+  "generation_seconds": 67.59,
+  "total_wall_seconds": 127.18,
+  "records": [
+    {
+      "prompt": "a red fox in snow at dawn, photographic",
+      "seed": 20261018,
+      "path": "benchmark-output/sdxl-turbo-staged/01_red_fox_snow_dawn.png",
+      "wall_seconds": 13.7,
+      "output_bytes": 306669
+    },
+    {
+      "prompt": "a hand-drawn tavern sign that says \"OPEN LATE\"",
+      "seed": 20261019,
+      "path": "benchmark-output/sdxl-turbo-staged/02_tavern_sign_open_late.png",
+      "wall_seconds": 13.512,
+      "output_bytes": 414008
+    },
+    {
+      "prompt": "a futuristic city street at night in rain",
+      "seed": 20261020,
+      "path": "benchmark-output/sdxl-turbo-staged/03_futuristic_city_rain.png",
+      "wall_seconds": 13.454,
+      "output_bytes": 388419
+    },
+    {
+      "prompt": "a bowl of ramen, close-up",
+      "seed": 20261021,
+      "path": "benchmark-output/sdxl-turbo-staged/04_ramen_closeup.png",
+      "wall_seconds": 13.399,
+      "output_bytes": 421957
+    },
+    {
+      "prompt": "a portrait of an elderly fisherman",
+      "seed": 20261022,
+      "path": "benchmark-output/sdxl-turbo-staged/05_elderly_fisherman.png",
+      "wall_seconds": 13.524,
+      "output_bytes": 419611
+    }
+  ],
+  "peak_rss_bytes": 12307947520,
+  "peak_rss_mib": 11737.77,
+  "python": "3.11.17 (main, Oct  1 2026, 14:32:31) [GCC 13.3.0]",
+  "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+  "package_versions": {
+    "diffusers": "0.41.0",
+    "huggingface-hub": "1.33.0",
+    "numpy": "2.4.6",
+    "Pillow": "13.0.0",
+    "psutil": "7.2.2",
+    "safetensors": "0.8.0",
+    "torch": "2.14.1+cpu",
+    "torchvision": "0.29.1+cpu",
+    "transformers": "5.20.1"
+  }
+}
