@@ -1,5 +1,5 @@
 name: CPU Image Benchmark (scratch)
-run-name: CPU image benchmark ${{ inputs.model }} ${{ inputs.invocation_id }}
+run-name: CPU image benchmark ${{ inputs.model }} ${{ inputs.precision }} ${{ inputs.invocation_id }}
 
 on:
   workflow_dispatch:
@@ -13,6 +13,22 @@ on:
           - sdxl-turbo
           - sdxl-lightning
           - z-image-turbo-gguf
+      precision:
+        description: Diffusers weight precision (ignored by the GGUF runtime)
+        required: true
+        type: choice
+        default: float32
+        options:
+          - float32
+          - bfloat16
+      sd15_steps:
+        description: SD1.5 inference steps (used only when model is sd15)
+        required: true
+        type: choice
+        default: '20'
+        options:
+          - '20'
+          - '30'
       invocation_id:
         description: Correlation identifier
         required: true
@@ -23,7 +39,7 @@ permissions:
 
 jobs:
   benchmark:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - name: Check out scratch branch
@@ -32,25 +48,28 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.11.17'
 
       - name: Cache model files
         uses: actions/cache@v4
         with:
           path: ~/.cache/huggingface
-          key: cpu-image-${{ inputs.model }}-${{ runner.os }}-${{ hashFiles('benchmarks/cpu_image_benchmark.py', '.github/workflows/cpu-image-benchmark.yml') }}
+          key: cpu-image-${{ inputs.model }}-${{ inputs.precision }}-${{ runner.os }}-${{ hashFiles('benchmarks/cpu_image_benchmark.py', '.github/workflows/cpu-image-benchmark.yml', 'requirements-*.txt') }}
 
-      - name: Install Python runtime
+      - name: Install pinned CPU-only Diffusers runtime
         if: inputs.model != 'z-image-turbo-gguf'
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install psutil pillow diffusers transformers accelerate safetensors huggingface_hub
-          python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check --no-input --index-url https://pypi.org/simple --extra-index-url https://download.pytorch.org/whl/cpu -r requirements-cpu-torch.txt
+          python -m pip install --disable-pip-version-check --no-input --index-url https://pypi.org/simple -r requirements-benchmark.txt
+          python -m pip check
+          python -m pip freeze
 
       - name: Run Diffusers benchmark
         if: inputs.model != 'z-image-turbo-gguf'
         env:
           MODEL: ${{ inputs.model }}
+          PRECISION: ${{ inputs.precision }}
+          SD15_STEPS: ${{ inputs.sd15_steps }}
           OMP_NUM_THREADS: '2'
           MKL_NUM_THREADS: '2'
         run: python benchmarks/cpu_image_benchmark.py
@@ -63,10 +82,11 @@ jobs:
           cmake --build /tmp/stable-diffusion.cpp/build --config Release -j2
           /tmp/stable-diffusion.cpp/build/bin/sd-cli -h | head -120
 
-      - name: Download Z-Image-Turbo GGUF dependencies
+      - name: Install pinned Z-Image download dependencies and record versions
         if: inputs.model == 'z-image-turbo-gguf'
         run: |
-          python -m pip install --upgrade huggingface_hub psutil
+          python -m pip install --disable-pip-version-check --no-input --index-url https://pypi.org/simple -r requirements-zimage.txt
+          python -m pip freeze
           mkdir -p /tmp/zimage-models
           python - <<'PY'
           from huggingface_hub import hf_hub_download
@@ -74,7 +94,7 @@ jobs:
           files = [
               ('leejet/Z-Image-Turbo-GGUF', 'z_image_turbo-Q3_K.gguf', 'diffusion.gguf'),
               ('unsloth/Qwen3-4B-Instruct-2507-GGUF', 'Qwen3-4B-Instruct-2507-Q4_K_M.gguf', 'text.gguf'),
-              ('black-forest-labs/FLUX.1-schnell', 'ae.safetensors', 'ae.sft'),
+              ('Comfy-Org/z_image_turbo', 'split_files/vae/ae.safetensors', 'ae.sft'),
           ]
           for repo, filename, out in files:
               src = hf_hub_download(repo, filename)
@@ -87,7 +107,7 @@ jobs:
         env:
           OMP_NUM_THREADS: '2'
         run: |
-          set +e
+          set -euo pipefail
           mkdir -p benchmark-output/z-image-turbo-gguf
           cat > /tmp/zimage_prompts.tsv <<'EOF'
           01_red_fox_snow_dawn	a red fox in snow at dawn, photographic
@@ -97,8 +117,11 @@ jobs:
           05_elderly_fisherman	a portrait of an elderly fisherman
           EOF
           : > benchmark-output/z-image-turbo-gguf/metrics.jsonl
+          started=$(date +%s)
+          failures=0
           while IFS=$'\t' read -r slug prompt; do
             echo "=== $slug ==="
+            set +e
             /usr/bin/time -v -o "/tmp/${slug}.time" /tmp/stable-diffusion.cpp/build/bin/sd-cli \
               --diffusion-model /tmp/zimage-models/diffusion.gguf \
               --vae /tmp/zimage-models/ae.sft \
@@ -107,18 +130,48 @@ jobs:
               --output "benchmark-output/z-image-turbo-gguf/${slug}.png" \
               -p "$prompt"
             rc=$?
+            set -e
             rss=$(awk -F: '/Maximum resident set size/ {gsub(/^[ \t]+/,"",$2); print $2}' "/tmp/${slug}.time")
             wall=$(awk -F: '/Elapsed \(wall clock\) time/ {gsub(/^[ \t]+/,"",$2); print $2}' "/tmp/${slug}.time")
-            bytes=0; test -f "benchmark-output/z-image-turbo-gguf/${slug}.png" && bytes=$(stat -c %s "benchmark-output/z-image-turbo-gguf/${slug}.png")
-            printf '{"prompt":%q,"exit_code":%s,"wall_time":"%s","peak_rss_kb":"%s","output_bytes":%s}\n' "$prompt" "$rc" "$wall" "$rss" "$bytes" >> benchmark-output/z-image-turbo-gguf/metrics.jsonl
+            bytes=0
+            test -f "benchmark-output/z-image-turbo-gguf/${slug}.png" && bytes=$(stat -c %s "benchmark-output/z-image-turbo-gguf/${slug}.png")
+            python -c 'import json,sys; print(json.dumps({"slug":sys.argv[1],"prompt":sys.argv[2],"exit_code":int(sys.argv[3]),"wall_time":sys.argv[4],"peak_rss_kb":int(sys.argv[5]) if sys.argv[5] else None,"output_bytes":int(sys.argv[6])}))' "$slug" "$prompt" "$rc" "$wall" "$rss" "$bytes" >> benchmark-output/z-image-turbo-gguf/metrics.jsonl
+            if [ "$rc" -ne 0 ] || [ "$bytes" -le 0 ]; then failures=$((failures + 1)); fi
           done < /tmp/zimage_prompts.tsv
+          finished=$(date +%s)
+          total_wall=$((finished - started))
+          echo "total_wall_seconds=$total_wall failures=$failures"
+          TOTAL_WALL_SECONDS="$total_wall" python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          output = Path('benchmark-output/z-image-turbo-gguf')
+          records = [json.loads(line) for line in (output / 'metrics.jsonl').read_text().splitlines() if line.strip()]
+          rss_values = [record['peak_rss_kb'] for record in records if record['peak_rss_kb'] is not None]
+          metrics = {
+              'model': 'z-image-turbo-gguf',
+              'runtime': 'stable-diffusion.cpp CPU',
+              'precision': 'Q3_K GGUF diffusion; Q4_K_M text encoder',
+              'resolution': '512x512',
+              'steps': 8,
+              'guidance_scale': 1.0,
+              'logical_cpu_threads': 2,
+              'total_wall_seconds': int(os.environ['TOTAL_WALL_SECONDS']),
+              'peak_rss_kb': max(rss_values) if rss_values else None,
+              'peak_rss_mib': round(max(rss_values) / 1024, 2) if rss_values else None,
+              'records': records,
+          }
+          (output / 'metrics.json').write_text(json.dumps(metrics, indent=2), encoding='utf-8')
+          print(json.dumps(metrics, indent=2))
+          PY
           cat benchmark-output/z-image-turbo-gguf/metrics.jsonl
+          test "$failures" -eq 0
 
       - name: Upload benchmark artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cpu-image-${{ inputs.model }}-${{ inputs.invocation_id }}
+          name: cpu-image-${{ inputs.model }}-${{ inputs.precision }}-${{ inputs.invocation_id }}
           path: benchmark-output
           if-no-files-found: warn
           retention-days: 14
