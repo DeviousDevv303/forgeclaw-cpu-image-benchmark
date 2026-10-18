@@ -1,0 +1,5 @@
+{"slug": "01_red_fox_snow_dawn", "prompt": "a red fox in snow at dawn, photographic", "exit_code": 0, "wall_time": "mm", "peak_rss_kb": 7415924, "output_bytes": 479113}
+{"slug": "02_tavern_sign_open_late", "prompt": "a hand-drawn tavern sign that says \"OPEN LATE\"", "exit_code": 0, "wall_time": "mm", "peak_rss_kb": 7414028, "output_bytes": 560441}
+{"slug": "03_futuristic_city_rain", "prompt": "a futuristic city street at night in rain", "exit_code": 0, "wall_time": "mm", "peak_rss_kb": 7413960, "output_bytes": 612173}
+{"slug": "04_ramen_closeup", "prompt": "a bowl of ramen, close-up", "exit_code": 0, "wall_time": "mm", "peak_rss_kb": 7413320, "output_bytes": 647523}
+{"slug": "05_elderly_fisherman", "prompt": "a portrait of an elderly fisherman", "exit_code": 0, "wall_time": "mm", "peak_rss_kb": 7413052, "output_bytes": 525409}

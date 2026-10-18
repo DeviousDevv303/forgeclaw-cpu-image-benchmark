@@ -1,0 +1,60 @@
+{
+  "model": "z-image-turbo-gguf",
+  "runtime": "stable-diffusion.cpp CPU",
+  "stable_diffusion_cpp_commit": "b13a48219d5cdf408edcb93da6cd69b612ed03d3",
+  "hf_model_revisions": {
+    "leejet/Z-Image-Turbo-GGUF": "c61c0e422dc8b541b7548cf33a4ef8302b0f8085",
+    "unsloth/Qwen3-4B-Instruct-2507-GGUF": "a06e946bb6b655725eafa393f4a9745d460374c9",
+    "Comfy-Org/z_image_turbo": "6fc90a3b1b653e935a0d175e260736de25b84df5"
+  },
+  "precision": "Q3_K GGUF diffusion; Q4_K_M text encoder",
+  "resolution": "512x512",
+  "steps": 8,
+  "guidance_scale": 1.0,
+  "logical_cpu_threads": 2,
+  "total_wall_seconds": 1656,
+  "peak_rss_kb": 7415924,
+  "peak_rss_mib": 7242.11,
+  "records": [
+    {
+      "slug": "01_red_fox_snow_dawn",
+      "prompt": "a red fox in snow at dawn, photographic",
+      "exit_code": 0,
+      "wall_time": "mm",
+      "peak_rss_kb": 7415924,
+      "output_bytes": 479113
+    },
+    {
+      "slug": "02_tavern_sign_open_late",
+      "prompt": "a hand-drawn tavern sign that says \"OPEN LATE\"",
+      "exit_code": 0,
+      "wall_time": "mm",
+      "peak_rss_kb": 7414028,
+      "output_bytes": 560441
+    },
+    {
+      "slug": "03_futuristic_city_rain",
+      "prompt": "a futuristic city street at night in rain",
+      "exit_code": 0,
+      "wall_time": "mm",
+      "peak_rss_kb": 7413960,
+      "output_bytes": 612173
+    },
+    {
+      "slug": "04_ramen_closeup",
+      "prompt": "a bowl of ramen, close-up",
+      "exit_code": 0,
+      "wall_time": "mm",
+      "peak_rss_kb": 7413320,
+      "output_bytes": 647523
+    },
+    {
+      "slug": "05_elderly_fisherman",
+      "prompt": "a portrait of an elderly fisherman",
+      "exit_code": 0,
+      "wall_time": "mm",
+      "peak_rss_kb": 7413052,
+      "output_bytes": 525409
+    }
+  ]
+}
