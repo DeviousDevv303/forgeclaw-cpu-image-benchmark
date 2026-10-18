@@ -61,7 +61,7 @@ if MODEL == "sd15":
 elif MODEL == "sdxl-turbo":
     from diffusers import AutoPipelineForText2Image
     pipe = AutoPipelineForText2Image.from_pretrained(
-        "stabilityai/sdxl-turbo", torch_dtype=torch.float32, variant="fp32"
+        "stabilityai/sdxl-turbo", torch_dtype=torch.float32
     )
     pipe.enable_attention_slicing()
     steps, guidance = 1, 0.0
@@ -73,7 +73,7 @@ elif MODEL == "sdxl-lightning":
     unet = UNet2DConditionModel.from_config(base, subfolder="unet", torch_dtype=torch.float32)
     ckpt = hf_hub_download("ByteDance/SDXL-Lightning", "sdxl_lightning_1step_unet_x0.safetensors")
     unet.load_state_dict(load_file(ckpt, device="cpu"))
-    pipe = StableDiffusionXLPipeline.from_pretrained(base, unet=unet, torch_dtype=torch.float32, variant="fp32")
+    pipe = StableDiffusionXLPipeline.from_pretrained(base, unet=unet, torch_dtype=torch.float32)
     pipe.scheduler = EulerDiscreteScheduler.from_config(
         pipe.scheduler.config, timestep_spacing="trailing", prediction_type="sample"
     )

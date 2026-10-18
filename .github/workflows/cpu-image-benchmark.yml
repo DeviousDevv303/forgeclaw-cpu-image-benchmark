@@ -58,7 +58,7 @@ jobs:
       - name: Build stable-diffusion.cpp CPU runtime
         if: inputs.model == 'z-image-turbo-gguf'
         run: |
-          git clone --depth 1 https://github.com/leejet/stable-diffusion.cpp.git /tmp/stable-diffusion.cpp
+          git clone --depth 1 --recurse-submodules https://github.com/leejet/stable-diffusion.cpp.git /tmp/stable-diffusion.cpp
           cmake -S /tmp/stable-diffusion.cpp -B /tmp/stable-diffusion.cpp/build -DSD_CUDA=OFF -DSD_VULKAN=OFF -DSD_METAL=OFF
           cmake --build /tmp/stable-diffusion.cpp/build --config Release -j2
           /tmp/stable-diffusion.cpp/build/bin/sd-cli -h | head -120
